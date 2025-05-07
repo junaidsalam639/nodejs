@@ -2,11 +2,24 @@ const User = require("../models/userModel");
 
 exports.createUser = async (req, res) => {
     try {
+        const { email } = req.body;
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({
+                error: "Email already exists",
+                message: "A user with this email already exists. Please use a different email."
+            });
+        }
+
         const user = new User(req.body);
         const savedUser = await user.save();
         res.status(201).json(savedUser);
+
     } catch (err) {
-        res.status(400).json({ error: err.message });
+        res.status(400).json({
+            error: "Validation Error",
+            message: err.message
+        });
     }
 };
 
