@@ -7,9 +7,8 @@ const {
     updateUser,
     deleteUser
 } = require("../controllers/userController");
-const upload = require("../middleware/upload");
 
-router.post("/", upload.single("image"), createUser);
+router.post("/", createUser);
 router.get("/", getUsers);
 router.get("/:id", getUserById);
 router.put("/:id", updateUser);

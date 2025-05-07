@@ -2,10 +2,7 @@ const User = require("../models/userModel");
 
 exports.createUser = async (req, res) => {
     try {
-        const { name, email, age } = req.body;
-        const image = req.file ? `/uploads/${req.file.filename}` : "";
-
-        const user = new User({ name, email, age, image });
+        const user = new User(req.body);
         const savedUser = await user.save();
         res.status(201).json(savedUser);
     } catch (err) {
