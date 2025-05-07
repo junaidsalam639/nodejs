@@ -1,9 +1,29 @@
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
+
+const allowedOrigins = [
+    "http://localhost:3000",
+    "https://nodejs-wine-three.vercel.app"
+];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.error("Blocked by CORS:", origin);
+            return callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true
+}));
+
 app.use(express.json());
+app.use("/uploads", express.static("uploads"));
 
 const userRoutes = require("./routes/userRoutes");
 
