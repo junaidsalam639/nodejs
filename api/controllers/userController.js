@@ -1,8 +1,12 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 
-exports.createUser = async (req, res) => {
+const JWT_SECRET = "FSHDFJSDJKFHSDJKFHSDJHFSDJHFJHFSDJKHFJKHFJKHSDJKFHSJ";
+
+exports.signup = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { name, email, password } = req.body;
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -11,10 +15,17 @@ exports.createUser = async (req, res) => {
             });
         }
 
-        const user = new User(req.body);
+        const user = new User({ name, email, password });
         const savedUser = await user.save();
-        res.status(201).json(savedUser);
 
+        const token = jwt.sign(
+            { userId: savedUser._id, email: savedUser.email },
+            JWT_SECRET);
+
+        res.status(201).json({
+            token,
+            user: savedUser
+        });
     } catch (err) {
         res.status(400).json({
             error: "Validation Error",
@@ -23,40 +34,32 @@ exports.createUser = async (req, res) => {
     }
 };
 
-exports.getUsers = async (req, res) => {
+exports.login = async (req, res) => {
     try {
-        const users = await User.find();
-        res.json(users);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({
+                error: "Invalid credentials",
+                message: "No user found with this email"
+            });
+        }
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+            return res.status(400).json({
+                error: "Invalid credentials",
+                message: "Incorrect password"
+            });
+        }
 
-exports.getUserById = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id);
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.json(user);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-};
+        const token = jwt.sign(
+            { userId: user._id, email: user.email },
+            JWT_SECRET);
 
-exports.updateUser = async (req, res) => {
-    try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.json(user);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-};
-
-exports.deleteUser = async (req, res) => {
-    try {
-        const user = await User.findByIdAndDelete(req.params.id);
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.json({ message: "User deleted" });
+        res.status(200).json({
+            token,
+            user,
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
